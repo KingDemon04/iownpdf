@@ -1,5 +1,6 @@
 # IOwnPDF — Zero-Knowledge Client-Side PDF Suite
 
+[![Deploy Status](https://img.shields.io/github/actions/workflow/status/KingDemon04/iownpdf/deploy.yml?branch=main&label=Cloudflare%20Deploy&style=flat-square&logo=githubactions&logoColor=white)](https://github.com/KingDemon04/iownpdf/actions/workflows/deploy.yml)
 ![Architecture](https://img.shields.io/badge/Architecture-100%25_Client--Side-FD3901?style=flat-square)
 ![Engine](https://img.shields.io/badge/Engine-WebAssembly_%2B_Web_Workers-0f0f0f?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-Offline_Ready-emerald?style=flat-square)
@@ -125,10 +126,19 @@ npm run deploy
 
 ---
 
-## Security, Privacy & License
+## Security, Privacy & Third-Party Licenses
 
 * **Zero Telemetry:** This application collects no analytics, cookies, or usage metrics.
 * **Volatile Memory Processing:** All `ArrayBuffer` instances and virtual Emscripten filesystem nodes (`gs.FS`) are unlinked immediately after processing and garbage-collected upon tab closure.
 
-**Copyright © 2026 IOwnPDF. All Rights Reserved.**  
-The software is provided "AS IS", without warranty of any kind, express or implied.
+### Open-Source Attributions & Compliance
+IOwnPDF integrates the following open-source engines and libraries:
+* **Ghostscript WebAssembly (`@jspawn/ghostscript-wasm`):** Licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. In compliance with AGPLv3 Section 13, the complete corresponding source code of this web application is publicly available in this repository.
+* **Mozilla PDF.js (`pdfjs-dist`):** Licensed under the **Apache License 2.0**.
+* **pdf-lib, fflate & SortableJS:** Licensed under the **MIT License**.
+
+---
+
+**Application Source Code License:**  
+Copyright © 2026 Giuseppe Vasiliy Tringali — IOwnPDF.  
+Source code is publicly available for inspection, portfolio evaluation, and AGPLv3 compliance.

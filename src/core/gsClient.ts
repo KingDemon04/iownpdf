@@ -63,15 +63,22 @@ export async function compressPdf(
 }
 
 /**
- * Converte il PDF nel formato archivistico standard ISO PDF/A-1b o PDF/A-2b.
+ * Converte il PDF nel formato archivistico standard ISO PDF/A-1b o PDF/A-2b o PDF/A-3b.
  */
 export async function convertToPdfA(
   buffer: ArrayBuffer,
-  level: PdfAConformance = '2'
+  pdfaLevel: PdfAConformance
 ): Promise<Uint8Array> {
+  let inputBuffer = buffer;
+
+  if (String(pdfaLevel) !== '1') {
+    const { normalizeTransparencyGroups } = await import('./pdfActions');
+    inputBuffer = await normalizeTransparencyGroups(buffer);
+  }
+
   return runGsTask({
     action: 'pdfa',
-    buffer,
-    pdfaLevel: level
+    buffer: inputBuffer,
+    pdfaLevel
   });
 }

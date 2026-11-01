@@ -1,4 +1,4 @@
-import { PDFDocument, PDFPage, StandardFonts, rgb, degrees } from 'pdf-lib';
+import { PDFDocument, PDFPage, StandardFonts, rgb, degrees, PDFName, PDFDict } from 'pdf-lib';
 
 // ============================================================================
 // TIPI E INTERFACCE
@@ -375,4 +375,33 @@ export async function sanitizePdfMetadata(buffer: ArrayBuffer): Promise<Uint8Arr
   }
 
   return await pdfDoc.save();
+}
+
+
+
+
+export async function normalizeTransparencyGroups(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+  const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+
+  // Spazio colore CalRGB indipendente dal dispositivo (ISO 19005 Clause 6.2.4.3 & 6.2.10 compliant)
+  const calRgbSpace = pdfDoc.context.obj([
+    PDFName.of('CalRGB'),
+    { WhitePoint: [0.9505, 1.0, 1.089] }
+  ]);
+
+  for (const page of pdfDoc.getPages()) {
+    const group = page.node.lookup(PDFName.of('Group'));
+    if (group instanceof PDFDict) {
+      group.set(PDFName.of('S'), PDFName.of('Transparency'));
+      group.set(PDFName.of('CS'), calRgbSpace);
+    } else {
+      const newGroup = pdfDoc.context.obj({
+        S: 'Transparency',
+        CS: calRgbSpace
+      });
+      page.node.set(PDFName.of('Group'), newGroup);
+    }
+  }
+  const bytes = await pdfDoc.save();
+  return new Uint8Array(bytes).buffer;
 }

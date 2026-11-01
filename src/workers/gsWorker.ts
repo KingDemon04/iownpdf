@@ -90,10 +90,7 @@ self.onmessage = async (event: MessageEvent<GsWorkerRequest>) => {
         '-sDEVICE=pdfwrite',
         `-dPDFA=${pdfaLevel}`,
         '-dPDFACompatibilityPolicy=1',
-        // Converte DeviceRGB e DeviceGray in spazi CIE/CalRGB indipendenti dal dispositivo (risolve Clause 6.2.4.3)
         '-sColorConversionStrategy=UseDeviceIndependentColor',
-        // Appiattisce i gruppi di trasparenza orfani di OutputIntent (risolve Clause 6.2.10)
-        '-dHaveTransparency=false',
         '-dEmbedAllFonts=true',
         '-dSubsetFonts=true',
         '-dNOPAUSE',
@@ -102,6 +99,10 @@ self.onmessage = async (event: MessageEvent<GsWorkerRequest>) => {
         '-sOutputFile=/output.pdf',
         '/input.pdf'
       ];
+
+      if (String(pdfaLevel) === '1') {
+        args.splice(4, 0, '-dHaveTransparency=false');
+      }
     }
 
     const exitCode = gs.callMain(args);
