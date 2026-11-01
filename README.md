@@ -11,6 +11,7 @@
 Unlike traditional cloud-based PDF utilities that upload sensitive documents to remote servers, IOwnPDF executes every operation **100% locally within the user's volatile RAM** using **WebAssembly (Ghostscript Wasm)** and **Web Workers**. No document, metadata, or telemetry ever leaves the client device.
 
 🔗 **Live Production App:** [https://iownpdf.giutringa.workers.dev](https://iownpdf.giutringa.workers.dev)
+<img width="2559" height="1299" alt="Screenshot 2026-11-01 162017" src="https://github.com/user-attachments/assets/8dd43695-6d82-46cd-bc8e-2fad4fed8fef" />
 
 ---
 
