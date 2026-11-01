@@ -5,7 +5,7 @@
 ![Engine](https://img.shields.io/badge/Engine-WebAssembly_%2B_Web_Workers-0f0f0f?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-Offline_Ready-emerald?style=flat-square)
 ![Security](https://img.shields.io/badge/CSP-Strict_Self_Only-blue?style=flat-square)
-![License](https://img.shields.io/badge/License-All_Rights_Reserved-lightgrey?style=flat-square)
+![License](https://img.shields.io/badge/License-AGPLv3-blue?style=flat-square)
 
 **IOwnPDF** is a high-performance, privacy-first Progressive Web Application (PWA) for advanced PDF manipulation, archival standardization, and optimization.
 
@@ -140,5 +140,10 @@ IOwnPDF integrates the following open-source engines and libraries:
 ---
 
 **Application Source Code License:**  
-Copyright © 2026 Giuseppe Vasiliy Tringali — IOwnPDF.  
-Source code is publicly available for inspection, portfolio evaluation, and AGPLv3 compliance.
+IOwnPDF — Client-Side PDF Suite
+Copyright (c) 2026 Giuseppe Vasiliy Tringali
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
