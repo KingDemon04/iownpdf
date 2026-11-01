@@ -29,17 +29,17 @@ Unlike traditional cloud-based PDF utilities that upload sensitive documents to 
 
 ## Core Feature Suite (9 Tools)
 
-| Tool | Technical Implementation | Capabilities |
-| :--- | :--- | :--- |
-| **1. Merge PDF** | `pdf-lib` (`copyPages`) | Combines multiple PDF documents in custom drag-and-drop sequence. |
-| **2. Split PDF** | `pdf-lib` + `fflate` + File System API | Extracts page ranges into a single PDF, a `.zip` archive, or directly writes separate PDFs into a native OS folder (`showDirectoryPicker`). |
-| **3. Reorder / Rotate / Delete** | `pdfjs-dist` + `SortableJS` + `pdf-lib` | Interactive thumbnail grid with bulk rotation (`±90°`), order reversal, and on-demand high-DPI modal page inspection (`1.5x` canvas scale). |
-| **4. Page Numbers** | `pdf-lib` (Rotation-Aware Matrix) | Stamps localized numbering (`Page N of M`, `N / M`, `N`) with automatic coordinate transformation for rotated (`90°/180°/270°`) and landscape pages. |
-| **5. Watermark** | `pdf-lib` (Vector Typography) | Draws customizable diagonal (`+45°`), semi-transparent text watermarks centered across all pages regardless of page orientation. |
-| **6. Sanitize Metadata** | `pdf-lib` (Catalog & Info Stripper) | Permanently wipes `Title`, `Author`, `Subject`, `Keywords`, `Creator`, `Producer`, timestamps, and raw XML/XMP metadata streams. |
-| **7. PDF to Images** | `pdfjs-dist` + HTML5 Canvas + `fflate` | Renders PDF pages into lossless `PNG` or high-density `JPEG` (`150 DPI` / `300 DPI`) and packages them into a single `.zip` archive. |
-| **8. Compress PDF** | `@jspawn/ghostscript-wasm` (`pdfwrite`) | Downsamples embedded raster streams and optimizes PDF structures via `/screen` (72 dpi), `/ebook` (150 dpi), or `/printer` (300 dpi) profiles with anti-bloat fallback. |
-| **9. Convert to PDF/A** | `@jspawn/ghostscript-wasm` | Generates archival-grade documents compliant with **ISO 19005-1 (PDF/A-1b)**, **ISO 19005-2 (PDF/A-2b)**, and **ISO 19005-3 (PDF/A-3b)**. |
+| # | Tool | Technical Implementation | Capabilities |
+| :--- | :--- | :--- | :--- |
+| **1** | **Merge PDF** | `pdf-lib` (`copyPages`) | Combines multiple PDF documents in custom drag-and-drop sequence. |
+| **2** | **Split PDF** | `pdf-lib` + `fflate` + File System API | Extracts page ranges into a single PDF, a `.zip` archive, or writes separate PDFs directly into a native OS folder (`showDirectoryPicker`). |
+| **3** | **Reorder / Rotate / Delete** | `pdfjs-dist` + `IntersectionObserver` + `SortableJS` | Viewport-lazy thumbnail grid for large documents, bulk rotation (±90°), order reversal, and high-DPI modal page inspection. |
+| **4** | **Page Numbers** | `pdf-lib` (Rotation-Aware Matrix) | Stamps localized numbering (`Page N of M`, `N / M`, `N`) with automatic coordinate transformation for rotated and landscape pages. |
+| **5** | **Watermark** | `pdf-lib` (Vector Typography) | Draws customizable diagonal (+45°), semi-transparent text watermarks centered across all pages regardless of orientation. |
+| **6** | **Sanitize Metadata** | `pdf-lib` (Catalog & Info Stripper) | Permanently wipes Title, Author, Subject, Keywords, Creator, Producer, timestamps, and raw XML/XMP metadata streams. |
+| **7** | **PDF to Images** | `pdfjs-dist` + HTML5 Canvas + `fflate` | Renders PDF pages into lossless PNG or high-density JPEG (150 / 300 DPI) and packages them into a single `.zip` archive. |
+| **8** | **Compress PDF** | `@jspawn/ghostscript-wasm` (`pdfwrite`) | Downsamples embedded raster streams and optimizes PDF structures via `/screen`, `/ebook`, or `/printer` profiles with anti-bloat fallback. |
+| **9** | **Convert to PDF/A** | `pdf-lib` (`CalRGB`) + `@jspawn/ghostscript-wasm` | Generates `veraPDF`-verified archival documents compliant with **ISO 19005-1 (PDF/A-1b)**, **ISO 19005-2 (PDF/A-2b)**, and **ISO 19005-3 (PDF/A-3b)** while preserving slide transparencies. |
 
 ---
 
@@ -51,6 +51,7 @@ Unlike traditional cloud-based PDF utilities that upload sensitive documents to 
 * **Distillation & ISO Archival Engine:** `@jspawn/ghostscript-wasm` (WebAssembly running in isolated Web Worker)
 * **Archiving & UI:** `fflate` (Zero-dependency ZIP compression), `SortableJS`
 * **PWA & Offline Caching:** `vite-plugin-pwa` (Workbox Precache & Runtime Navigation Fallback)
+* **CI/CD & Edge Hosting:** GitHub Actions + Cloudflare Workers Static Assets
 
 ---
 
@@ -58,14 +59,14 @@ Unlike traditional cloud-based PDF utilities that upload sensitive documents to 
 
 IOwnPDF is designed for rapid desktop workflows:
 
-* `Ctrl + O` — Open PDF file selector
-* `Ctrl + V` — Paste PDF files directly from the system clipboard
-* `Ctrl + S` / `Ctrl + Enter` — Process and export to disk
-* `Ctrl + Shift + Enter` — **Apply in RAM & Continue** (Chain current output into the next tool)
-* `Alt + 1 ... 9` — Switch instantaneously between tools in the sidebar
-* `Alt + L` — Toggle interface language (`IT` / `EN`)
-* `Delete` — Clear current document queue
-* `Double Click` (on page thumbnail) — Open high-resolution page preview modal (`ESC` to close)
+* **`Ctrl + O`** — Open PDF file selector
+* **`Ctrl + V`** — Paste PDF files directly from the system clipboard
+* **`Ctrl + S` / `Ctrl + Enter`** — Process and export to disk (with immediate native file-handle acquisition)
+* **`Ctrl + Shift + Enter`** — Apply in RAM & Continue (Chain current output into the next tool)
+* **`Alt + 1 ... 9`** — Switch instantaneously between tools in the sidebar
+* **`Alt + L`** — Toggle interface language (IT / EN)
+* **`Delete`** — Clear current document queue
+* **`Double Click` (on page thumbnail)** — Open high-resolution page preview modal (`ESC` to close)
 
 ---
 
@@ -73,15 +74,18 @@ IOwnPDF is designed for rapid desktop workflows:
 
 ```text
 iownpdf/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml            # Automated CI/CD pipeline to Cloudflare Workers
 ├── public/
-│   ├── _headers                  # Strict CSP & security headers for Cloudflare
+│   ├── _headers                  # Grade A+ CSP, HSTS & security headers
 │   ├── icons/                    # 192x192 & 512x512 PWA manifest icons
-│   └── wasm/                     # Ghostscript WebAssembly binary (gs.wasm & gs.js)
+│   └── wasm/                     # Ghostscript WebAssembly binary (populated via postinstall)
 ├── src/
 │   ├── core/
 │   │   ├── gsClient.ts           # Promise-based RPC bridge to Ghostscript Worker
-│   │   ├── pageOrganizer.ts      # PDF.js grid renderer, hi-res modal & PDF-to-Image
-│   │   └── pdfActions.ts         # Rotation-aware pdf-lib manipulation routines
+│   │   ├── pageOrganizer.ts      # Lazy-rendered PDF.js grid, hi-res modal & PDF-to-Image
+│   │   └── pdfActions.ts         # Rotation-aware pdf-lib routines & CalRGB group normalizer
 │   ├── i18n/
 │   │   ├── i18n.ts               # Reactive bilingual DOM state manager
 │   │   └── translations.ts       # Full IT / EN dictionary
@@ -91,9 +95,11 @@ iownpdf/
 │   ├── style.css                 # Tailwind v4 configuration & WCAG AAA contrast overrides
 │   └── vite-env.d.ts             # TypeScript declarations for Wasm & Service Worker
 ├── index.html                    # Main application layout
-├── package.json                  # Scripts and minimal dependency tree
+├── LICENSE                       # GNU AGPLv3 License
+├── package.json                  # Scripts and dependency tree
 ├── tsconfig.json                 # Strict TypeScript compiler configuration
-└── vite.config.ts                # Vite bundler, esnext target & Workbox PWA config
+├── vite.config.ts                # Vite bundler, esnext target & Workbox PWA config
+└── wrangler.jsonc                # Cloudflare Workers Static Assets configuration
 ```
 
 ---
@@ -120,6 +126,7 @@ npm run preview
 ```
 
 ### Deployment (Cloudflare Workers Static Assets)
+Production deployments are fully automated via GitHub Actions (.github/workflows/deploy.yml) on every push to the main branch, or can be triggered manually via:
 ```bash
 npm run deploy
 ```

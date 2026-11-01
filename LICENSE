@@ -1,6 +1,15 @@
-Copyright (c) 2026 IOwnPDF. All Rights Reserved.
+IOwnPDF — Zero-Knowledge Client-Side PDF Suite
+Copyright (c) 2026 Giuseppe Vasiliy Tringali
 
-Permission is hereby granted to view and inspect the source code for personal evaluation and portfolio review purposes only.
-No part of this software may be redistributed, sublicensed, or used for commercial purposes without explicit written permission from the author.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/agpl-3.0.html>.
