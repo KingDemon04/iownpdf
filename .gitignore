@@ -1,0 +1,48 @@
+# Dipendenze Node.js
+node_modules/
+
+# Output di compilazione Vite & PWA (generati da npm run build)
+dist/
+dist-ssr/
+dev-dist/
+
+# Binari Ghostscript copiati da node_modules (rigenerabili via script)
+# NOTA: Se preferisci avere gs.wasm già pronto clonando il repo, commenta la riga seguente:
+public/wasm/
+
+# Cache e stato locale di Cloudflare Wrangler
+.wrangler/
+.dev.vars
+
+# Launcher locali personali (se li hai creati nella cartella del progetto)
+*.vbs
+*.bat
+
+# Log di npm e debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# File di ambiente e chiavi locali
+.env
+.env.local
+.env.*.local
+
+# Cache di TypeScript e Vite
+*.tsbuildinfo
+.vite/
+
+# Cartelle di sistema operativo e IDE (Windows 11 / VS Code)
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

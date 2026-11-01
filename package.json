@@ -1,0 +1,28 @@
+{
+  "name": "local-pdf-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+"scripts": {
+    "postinstall": "node -e \"const fs=require('fs'); fs.mkdirSync('public/wasm',{recursive:true}); fs.copyFileSync('node_modules/@jspawn/ghostscript-wasm/gs.wasm','public/wasm/gs.wasm'); fs.copyFileSync('node_modules/@jspawn/ghostscript-wasm/gs.js','public/wasm/gs.js');\"",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "deploy": "npm run build && npx wrangler deploy --assets=./dist --name=iownpdf --compatibility-date=2026-10-23"
+  },
+  "dependencies": {
+    "@jspawn/ghostscript-wasm": "^0.0.2",
+    "fflate": "^0.8.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
+    "sortablejs": "^1.15.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/sortablejs": "^1.15.9",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vite-plugin-pwa": "^2.0.0"
+  }
+}

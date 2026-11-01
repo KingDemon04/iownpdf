@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="IOwnPDF - Zero-Knowledge Client-Side PDF Processing Suite. Merge, split, compress, and convert PDFs to PDF/A locally in RAM." />
+    <meta name="theme-color" content="#050505" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <title>IOwnPDF — Client-Side PDF Suite</title>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none">
+    <!-- Topbar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow">
+                PDF
+            </div>
+            <h1 class="text-lg font-bold tracking-tight" data-i18n="appTitle">IOwnPDF</h1>
+            <span
+                class="text-xs bg-[#FD3901]/15 text-[#ff6a3d] border border-[#FD3901]/30 px-2.5 py-0.5 rounded-full font-medium"
+                data-i18n="offlineBadge">
+                Client-Side Engine
+            </span>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+            <button id="about-btn" type="button"
+                class="px-3 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition cursor-pointer"
+                data-i18n="aboutBtn"></button>
+            <button id="lang-toggle" type="button"
+                class="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium transition cursor-pointer">
+                IT / EN
+            </button>
+        </div>
+    </header>
+
+    <!-- Layout Principale -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Strumenti -->
+        <aside class="w-64 border-r border-slate-800 bg-slate-900/40 p-4 flex flex-col gap-1 overflow-y-auto">
+            <button data-tool="merge"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white transition cursor-pointer"
+                data-i18n="toolMerge"></button>
+            <button data-tool="split"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                data-i18n="toolSplit"></button>
+            <button data-tool="organize"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                data-i18n="toolOrganize"></button>
+            <button data-tool="number"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                data-i18n="toolNumber"></button>
+            <button data-tool="watermark"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                data-i18n="toolWatermark"></button>
+            <button data-tool="sanitize"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                data-i18n="toolSanitize"></button>
+            <div class="my-1.5 border-t border-slate-800"></div>
+            <button data-tool="pdf2img"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                data-i18n="toolPdfToImg"></button>
+            <button data-tool="compress"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                data-i18n="toolCompress"></button>
+            <button data-tool="pdfa"
+                class="tool-btn text-left px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                data-i18n="toolPdfA"></button>
+
+            <!-- Footer Sidebar (Copyright & Sicurezza) -->
+            <div class="mt-auto pt-4 border-t border-slate-800/80 text-[11px] text-slate-400 flex flex-col gap-1">
+                <div class="font-semibold text-slate-300">© 2026 IOwnPDF</div>
+                <div>Zero-Knowledge Local PWA</div>
+                <div>All Rights Reserved</div>
+            </div>
+        </aside>
+
+        <!-- Workspace Centrale -->
+        <main class="flex-1 p-6 overflow-y-auto flex flex-col gap-6">
+            <!-- Dropzone -->
+            <label id="dropzone"
+                class="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900/30 rounded-xl p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition">
+                <p class="text-[11px] text-slate-400 text-center -mt-3 font-mono" data-i18n="shortcutsHint"></p>
+                <input type="file" id="file-input" aria-label="Upload PDF" accept="application/pdf" multiple
+                    class="hidden" />
+                <p class="text-base font-medium text-slate-200" data-i18n="dropzoneTitle"></p>
+                <p class="text-xs text-slate-400" data-i18n="dropzoneSub"></p>
+            </label>
+
+            <!-- Notifica Toast Chaining -->
+            <div id="chain-toast"
+                class="hidden px-4 py-2.5 rounded-lg bg-[#FD3901]/15 border border-[#FD3901]/40 text-[#FD3901] text-xs font-semibold items-center justify-between">
+                <span data-i18n="chainSuccessToast"></span>
+            </div>
+
+            <!-- Area Operativa -->
+            <section id="workspace-area" class="hidden flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-slate-300" data-i18n="filesLoaded"></h2>
+                    <button id="clear-files" class="text-xs text-rose-400 hover:underline cursor-pointer"
+                        data-i18n="clearFiles"></button>
+                </div>
+
+                <ul id="file-list" class="flex flex-col gap-2"></ul>
+
+                <div id="tool-options" class="p-4 rounded-xl bg-slate-900 border border-slate-800"></div>
+
+                <!-- Doppio pulsante: Applica in RAM (Chaining) + Elabora ed Esporta -->
+                <div class="flex flex-wrap items-center justify-end gap-3">
+                    <button id="chain-btn" type="button"
+                        class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition cursor-pointer"
+                        data-i18n="chainBtn"></button>
+
+                    <button id="process-btn" type="button"
+                        class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition cursor-pointer"
+                        data-i18n="processBtn"></button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modale Privacy, Sicurezza & Copyright -->
+    <div id="about-modal"
+        class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm items-center justify-center p-4">
+        <div class="max-w-lg w-full rounded-xl bg-slate-900 border border-slate-800 p-6 flex flex-col gap-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-100" data-i18n="aboutTitle"></h3>
+                <button id="close-about-modal"
+                    class="text-xs font-bold px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer">ESC</button>
+            </div>
+            <div class="flex flex-col gap-2 text-xs text-slate-300 leading-relaxed">
+                <h4 class="font-semibold text-[#FD3901]" data-i18n="aboutPrivacyTitle"></h4>
+                <p class="text-slate-400" data-i18n="aboutPrivacyBody"></p>
+                <h4 class="font-semibold text-[#FD3901] mt-2" data-i18n="aboutLicenseTitle"></h4>
+                <p class="text-slate-400" data-i18n="aboutLicenseBody"></p>
+            </div>
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                <span>ISO 19005 (PDF/A-1b, 2b, 3b) • WebAssembly Sandbox</span>
+                <span>© 2026 IOwnPDF</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
