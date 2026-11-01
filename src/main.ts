@@ -85,6 +85,14 @@ function renderToolOptions(): void {
           </div>
         </div>
       `;
+      const splitModeSelect = document.getElementById('split-mode') as HTMLSelectElement | null;
+      splitModeSelect?.addEventListener('change', () => {
+        if (splitModeSelect.value === 'single') {
+          chainBtn.classList.remove('hidden');
+        } else {
+          chainBtn.classList.add('hidden');
+        }
+      });
       break;
 
     case 'organize':
@@ -561,51 +569,105 @@ chainBtn.addEventListener('click', async () => {
   }
 });
 
-// Pulsante 2: Elabora ed Esporta su disco
+// Helper per acquisire SUBITO la destinazione di salvataggio (prima di elaborazioni lunghe)
+async function acquireSaveHandle(
+  suggestedName: string,
+  description: string,
+  mimeType: string,
+  ext: string
+): Promise<any | 'ABORTED' | null> {
+  if ('showSaveFilePicker' in window) {
+    try {
+      return await (window as any).showSaveFilePicker({
+        suggestedName,
+        types: [{ description, accept: { [mimeType]: [ext] } }]
+      });
+    } catch (err: any) {
+      if (err.name === 'AbortError') return 'ABORTED';
+    }
+  }
+  return null;
+}
+
+// Pulsante 2: Elabora ed Esporta su disco (con scelta percorso immediata!)
 processBtn.addEventListener('click', async () => {
   if (state.files.length === 0) return;
 
   try {
-    setProcessingState(true);
     const firstFile = state.files[0];
     const baseName = firstFile.name.replace(/\.pdf$/i, '');
 
     // Caso speciale 1: Split in modalità ZIP o Cartella
     if (state.activeTool === 'split') {
-      const { splitPdfIntoSeparateFiles } = await import('./core/pdfActions');
       const modeSelect = document.getElementById('split-mode') as HTMLSelectElement | null;
       const rangeInput = document.getElementById('split-range') as HTMLInputElement | null;
       const mode = modeSelect?.value || 'single';
       const rangeStr = rangeInput?.value.trim() || 'all';
 
-      if (mode !== 'single') {
+      if (mode === 'zip') {
+        const zipHandle = await acquireSaveHandle(`${baseName}_split.zip`, 'ZIP Archive', 'application/zip', '.zip');
+        if (zipHandle === 'ABORTED') return;
+
+        setProcessingState(true);
+        const { splitPdfIntoSeparateFiles } = await import('./core/pdfActions');
         const filesToSave = await splitPdfIntoSeparateFiles(firstFile.buffer, rangeStr);
-        if (mode === 'zip') {
-          await saveMultipleAsZip(filesToSave, `${baseName}_split.zip`, baseName, true);
-        } else {
-          await saveMultiplePdfFiles(filesToSave, baseName);
+        await saveMultipleAsZip(filesToSave, `${baseName}_split.zip`, baseName, true, zipHandle);
+        return;
+      } else if (mode === 'folder') {
+        let dirHandle: any = null;
+        if ('showDirectoryPicker' in window) {
+          try {
+            dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
+          } catch (err: any) {
+            if (err.name === 'AbortError') return;
+          }
         }
+        setProcessingState(true);
+        const { splitPdfIntoSeparateFiles } = await import('./core/pdfActions');
+        const filesToSave = await splitPdfIntoSeparateFiles(firstFile.buffer, rangeStr);
+        await saveMultiplePdfFiles(filesToSave, baseName, dirHandle);
         return;
       }
     }
 
     // Caso speciale 2: Conversione PDF in Immagini (PNG/JPEG in archivio ZIP)
     if (state.activeTool === 'pdf2img') {
-      const { convertPdfToImages } = await import('./core/pageOrganizer');
+      const zipHandle = await acquireSaveHandle(`${baseName}_images.zip`, 'ZIP Archive', 'application/zip', '.zip');
+      if (zipHandle === 'ABORTED') return;
+
+      setProcessingState(true);
       const fmtEl = document.getElementById('img-format') as HTMLSelectElement;
       const scaleEl = document.getElementById('img-scale') as HTMLSelectElement;
       const format = (fmtEl?.value as 'png' | 'jpeg') || 'png';
       const scale = parseFloat(scaleEl?.value || '2');
 
+      const { convertPdfToImages } = await import('./core/pageOrganizer');
       const images = await convertPdfToImages(firstFile.buffer, format, scale);
-      await saveMultipleAsZip(images, `${baseName}_images.zip`, baseName, false);
+      await saveMultipleAsZip(images, `${baseName}_images.zip`, baseName, false, zipHandle);
       return;
     }
 
-    // Tutti gli altri strumenti producono un singolo PDF
+    // Tutti gli altri strumenti (Merge, Split singolo, Organize, Number, Watermark, Sanitize, Compress, PDF/A)
+    const suffixMap: Record<string, string> = {
+      merge: 'merged',
+      split: 'split',
+      organize: 'organized',
+      number: 'numbered',
+      watermark: 'watermarked',
+      sanitize: 'sanitized',
+      compress: 'compressed',
+      pdfa: `PDFA-${(document.getElementById('pdfa-standard') as HTMLSelectElement)?.value || '2'}b`
+    };
+    const suggestedFileName = `${baseName}_${suffixMap[state.activeTool] || 'out'}.pdf`;
+
+    // Chiede SUBITO dove salvare il PDF (così anche se Ghostscript impiega 30 secondi non scade il permesso!)
+    const pdfHandle = await acquireSaveHandle(suggestedFileName, 'PDF Document', 'application/pdf', '.pdf');
+    if (pdfHandle === 'ABORTED') return;
+
+    setProcessingState(true);
     const result = await produceSinglePdfResult();
     if (result) {
-      await savePdfBytes(result.bytes, result.fileName);
+      await savePdfBytes(result.bytes, result.fileName, pdfHandle);
     }
   } catch (err: any) {
     alert(err.message || 'Error processing PDF');
@@ -615,7 +677,7 @@ processBtn.addEventListener('click', async () => {
 });
 
 // ============================================================================
-// 5. SALVATAGGIO NATIVO WINDOWS 11 (PDF, ZIP, DIRECTORY)
+// 5. SALVATAGGIO NATIVO WINDOWS 11 (CON HANDLE PRE-ACQUISITO)
 // ============================================================================
 
 if ('launchQueue' in window) {
@@ -629,23 +691,19 @@ if ('launchQueue' in window) {
   });
 }
 
-export async function savePdfBytes(bytes: Uint8Array, suggestedName: string): Promise<void> {
+export async function savePdfBytes(
+  bytes: Uint8Array,
+  suggestedName: string,
+  preAcquiredHandle?: any
+): Promise<void> {
   const safeBuffer = new Uint8Array(bytes).buffer;
   const blob = new Blob([safeBuffer], { type: 'application/pdf' });
 
-  if ('showSaveFilePicker' in window) {
-    try {
-      const handle = await (window as any).showSaveFilePicker({
-        suggestedName,
-        types: [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }]
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-    }
+  if (preAcquiredHandle) {
+    const writable = await preAcquiredHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return;
   }
 
   const url = URL.createObjectURL(blob);
@@ -660,8 +718,10 @@ export async function saveMultipleAsZip(
   files: SplitOutputFile[],
   suggestedZipName: string,
   baseName: string,
-  appendPdfExt: boolean
+  appendPdfExt: boolean,
+  preAcquiredHandle?: any
 ): Promise<void> {
+  const { zipSync } = await import('fflate');
   const zipData: Record<string, Uint8Array> = {};
   for (const item of files) {
     const entryName = appendPdfExt
@@ -669,24 +729,16 @@ export async function saveMultipleAsZip(
       : `${baseName}_${item.suffix}`;
     zipData[entryName] = item.bytes;
   }
-  const { zipSync } = await import('fflate');
+
   const zippedBytes = zipSync(zipData, { level: 0 });
   const safeBuffer = new Uint8Array(zippedBytes).buffer;
   const blob = new Blob([safeBuffer], { type: 'application/zip' });
 
-  if ('showSaveFilePicker' in window) {
-    try {
-      const handle = await (window as any).showSaveFilePicker({
-        suggestedName: suggestedZipName,
-        types: [{ description: 'ZIP Archive', accept: { 'application/zip': ['.zip'] } }]
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-    }
+  if (preAcquiredHandle) {
+    const writable = await preAcquiredHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return;
   }
 
   const url = URL.createObjectURL(blob);
@@ -699,23 +751,19 @@ export async function saveMultipleAsZip(
 
 export async function saveMultiplePdfFiles(
   files: SplitOutputFile[],
-  baseName: string
+  baseName: string,
+  preAcquiredDirHandle?: any
 ): Promise<void> {
-  if ('showDirectoryPicker' in window) {
-    try {
-      const dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
-      for (const item of files) {
-        const fileName = `${baseName}_${item.suffix}.pdf`;
-        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
-        const writable = await fileHandle.createWritable();
-        const safeBuffer = new Uint8Array(item.bytes).buffer;
-        await writable.write(new Blob([safeBuffer], { type: 'application/pdf' }));
-        await writable.close();
-      }
-      return;
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
+  if (preAcquiredDirHandle) {
+    for (const item of files) {
+      const fileName = `${baseName}_${item.suffix}.pdf`;
+      const fileHandle = await preAcquiredDirHandle.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable();
+      const safeBuffer = new Uint8Array(item.bytes).buffer;
+      await writable.write(new Blob([safeBuffer], { type: 'application/pdf' }));
+      await writable.close();
     }
+    return;
   }
 
   for (const item of files) {

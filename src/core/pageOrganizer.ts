@@ -242,51 +242,89 @@ const rotateCurrentPage = (angleDelta: 90 | -90): void => {
 /**
  * Renderizza le miniature del PDF nel container specificato e attiva SortableJS.
  */
+let organizerSortable: Sortable | null = null;
 export async function renderOrganizerGrid(
   buffer: ArrayBuffer,
   container: HTMLElement
 ): Promise<void> {
-  if (sortableInstance) {
-    sortableInstance.destroy();
-    sortableInstance = null;
+  if (organizerSortable) {
+    organizerSortable.destroy();
+    organizerSortable = null;
   }
 
   container.innerHTML = '';
   container.className =
-    'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 w-full select-none';
+    'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-h-[60vh] overflow-y-auto p-2';
 
   const loadingTask = pdfjsLib.getDocument({ data: buffer.slice(0) });
   const pdfDoc = await loadingTask.promise;
   const numPages = pdfDoc.numPages;
 
-  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-    const page = await pdfDoc.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 0.35 });
+  // Renderizza il canvas della miniatura solo quando la card diventa visibile nello scroll
+  const observer = new IntersectionObserver(
+    (entries, obs) => {
+      entries.forEach(async (entry) => {
+        if (!entry.isIntersecting) return;
+        const card = entry.target as HTMLElement;
+        obs.unobserve(card);
 
+        if (card.dataset.rendered === 'true') return;
+        card.dataset.rendered = 'true';
+
+        const pageNum = parseInt(card.dataset.originalIndex || '0', 10) + 1;
+        const canvas = card.querySelector<HTMLCanvasElement>('canvas');
+        if (!canvas) return;
+
+        try {
+          const page = await pdfDoc.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 0.35 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d')!;
+          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+        } catch {
+          // Ignora se la card è stata rimossa durante lo scroll
+        }
+      });
+    },
+    { root: container, rootMargin: '150px' }
+  );
+
+  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     const card = document.createElement('div');
     card.className =
-      'page-card relative group bg-slate-950 border border-slate-800 hover:border-indigo-500 rounded-lg p-2.5 flex flex-col items-center gap-2 cursor-grab active:cursor-grabbing transition';
+      'page-card relative group rounded-lg bg-slate-950 border border-slate-800 hover:border-indigo-500 p-2 flex flex-col items-center gap-2 select-none cursor-grab active:cursor-grabbing transition';
     card.dataset.originalIndex = String(pageNum - 1);
     card.dataset.rotationDelta = '0';
 
-    // Barra pulsanti in overlay (Zoom 🔍, Ruota ↻, Elimina ✕)
-    const controls = document.createElement('div');
-    controls.className =
-      'absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity';
+    const canvasWrap = document.createElement('div');
+    canvasWrap.className =
+      'w-full h-40 flex items-center justify-center overflow-hidden bg-slate-900 rounded';
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'max-w-full max-h-full object-contain transition-transform duration-200';
+    canvasWrap.appendChild(canvas);
+
+    const footer = document.createElement('div');
+    footer.className = 'w-full flex items-center justify-between text-xs text-slate-400 px-1';
+    footer.innerHTML = `<span class="font-semibold text-slate-300">#${pageNum}</span>`;
+
+    const actions = document.createElement('div');
+    actions.className = 'flex items-center gap-1';
 
     const zoomBtn = document.createElement('button');
     zoomBtn.type = 'button';
-    zoomBtn.title = 'Ingrandisci / Zoom';
+    zoomBtn.title = 'Ingrandisci / Inspect';
     zoomBtn.className =
       'p-1.5 rounded bg-slate-900/90 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 text-xs cursor-pointer shadow';
     zoomBtn.textContent = '🔍';
 
-  const rotateBtn = document.createElement('button');
-      rotateBtn.type = 'button';
-      rotateBtn.title = 'Clic SX: +90° | Clic DX: -90°';
-      rotateBtn.className =
-        'p-1.5 rounded bg-slate-900/90 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 text-xs cursor-pointer shadow';
-      rotateBtn.textContent = '↻';
+    const rotateBtn = document.createElement('button');
+    rotateBtn.type = 'button';
+    rotateBtn.title = 'Clic SX: +90° | Clic DX: -90°';
+    rotateBtn.className =
+      'p-1.5 rounded bg-slate-900/90 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 text-xs cursor-pointer shadow';
+    rotateBtn.textContent = '↻';
 
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
@@ -295,58 +333,39 @@ export async function renderOrganizerGrid(
       'p-1.5 rounded bg-slate-900/90 hover:bg-rose-600 text-slate-200 hover:text-white border border-slate-700 text-xs cursor-pointer shadow';
     deleteBtn.textContent = '✕';
 
-    controls.appendChild(zoomBtn);
-    controls.appendChild(rotateBtn);
-    controls.appendChild(deleteBtn);
+    actions.appendChild(zoomBtn);
+    actions.appendChild(rotateBtn);
+    actions.appendChild(deleteBtn);
+    footer.appendChild(actions);
 
-    const canvasWrapper = document.createElement('div');
-    canvasWrapper.className = 'w-full h-44 flex items-center justify-center overflow-hidden';
-
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    canvas.className =
-      'max-w-full max-h-full object-contain rounded shadow transition-transform duration-200';
-
-    canvasWrapper.appendChild(canvas);
-
-    const badge = document.createElement('span');
-    badge.className = 'text-xs font-medium text-slate-400';
-    badge.textContent = `#${pageNum}`;
-
-    card.appendChild(controls);
-    card.appendChild(canvasWrapper);
-    card.appendChild(badge);
+    card.appendChild(canvasWrap);
+    card.appendChild(footer);
     container.appendChild(card);
 
-    const ctx = canvas.getContext('2d')!;
-    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+    // Registra la card nell'IntersectionObserver per il caricamento pigro
+    observer.observe(card);
 
-    // Apertura modale con pulsante 🔍 oppure con doppio clic sulla miniatura
-    zoomBtn.addEventListener('click', (e: MouseEvent) => {
+    const openZoom = (e: MouseEvent) => {
       e.stopPropagation();
       openPagePreviewModal(pdfDoc, pageNum, card, container);
-    });
-    card.addEventListener('dblclick', () => {
-      openPagePreviewModal(pdfDoc, pageNum, card, container);
-    });
+    };
+    zoomBtn.addEventListener('click', openZoom);
+    card.addEventListener('dblclick', openZoom);
 
-const applyCardRotation = (angleDelta: 90 | -90): void => {
+    const applyCardRotation = (angleDelta: 90 | -90): void => {
       const currentDelta = parseInt(card.dataset.rotationDelta || '0', 10);
       const nextDelta = (currentDelta + angleDelta + 360) % 360;
       card.dataset.rotationDelta = String(nextDelta);
       canvas.style.transform = `rotate(${nextDelta}deg)`;
     };
 
-    // Clic sinistro: Ruota in senso orario (+90°)
     rotateBtn.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation();
       applyCardRotation(90);
     });
 
-    // Clic destro: Ruota in senso antiorario (-90°)
     rotateBtn.addEventListener('contextmenu', (e: MouseEvent) => {
-      e.preventDefault(); // Blocca il menu contestuale di Windows/Browser
+      e.preventDefault();
       e.stopPropagation();
       applyCardRotation(-90);
     });
@@ -358,7 +377,7 @@ const applyCardRotation = (angleDelta: 90 | -90): void => {
     });
   }
 
-  sortableInstance = Sortable.create(container, {
+  organizerSortable = Sortable.create(container, {
     animation: 150,
     ghostClass: 'opacity-40',
     filter: 'button',
