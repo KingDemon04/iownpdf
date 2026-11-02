@@ -873,3 +873,10 @@ window.addEventListener('paste', async (e: ClipboardEvent) => {
     await handleFiles(pastedFiles);
   }
 });
+
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    fetch('/wasm/gs.wasm').catch(() => {});
+  }, 1500);
+});

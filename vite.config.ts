@@ -10,14 +10,29 @@ export default defineConfig({
       injectRegister: 'inline',
       includeAssets: ['icons/*.png', 'wasm/*'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,mjs,webmanifest}'],
-        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
+        // Pre-cacha subito l'app shell (HTML, CSS, JS, icone)
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api/],
-        ignoreURLParametersMatching: [/.*/]
+        navigateFallback: '/index.html',
+        // Cacha automaticamente i binari pesanti (.wasm e .mjs di PDF.js) con strategia CacheFirst
+        runtimeCaching: [
+          {
+            urlPattern: /\.(?:wasm|mjs)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'iownpdf-heavy-engines',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 anno
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
       },
   manifest: {
         name: 'IOwnPDF',
