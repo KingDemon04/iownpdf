@@ -13,7 +13,7 @@ Unlike traditional cloud-based PDF utilities that upload sensitive documents to 
 
 🔗 **Live Production App:** [https://iownpdf.giutringa.workers.dev](https://iownpdf.giutringa.workers.dev)
 
-<img width="2559" height="1363" alt="Screenshot 2026-11-02 225737" src="https://github.com/user-attachments/assets/285f9534-02c0-4d69-9e90-6fd8269ca9d6" />
+<img width="2559" height="1363" alt="Screenshot 2026-11-02 225737" src="https://github.com/user-attachments/assets/eee45183-6871-4805-8032-a364a31031f8" />
 
 ---
 
