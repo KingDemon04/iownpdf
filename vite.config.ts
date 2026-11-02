@@ -10,12 +10,14 @@ export default defineConfig({
       injectRegister: 'inline',
       includeAssets: ['icons/*.png', 'wasm/*'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
-        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,mjs,webmanifest}'],
+        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        navigateFallback: 'index.html'
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api/],
+        ignoreURLParametersMatching: [/.*/]
       },
   manifest: {
         name: 'IOwnPDF',
