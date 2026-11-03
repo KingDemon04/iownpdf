@@ -7,7 +7,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'inline',
+      injectRegister: 'script',
       includeAssets: ['icons/*.png', 'wasm/*'],
       workbox: {
         // Pre-cacha subito l'app shell (HTML, CSS, JS, icone)
